@@ -4,54 +4,30 @@
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow','POST');
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
-
   const KEY = process.env.OPENROUTER_API_KEY;
-  if (!KEY) {
-    console.error('Missing OPENROUTER_API_KEY env var');
-    return res.status(500).json({ error: 'server_missing_config' });
-  }
+  if (!KEY) return res.status(500).json({ error:'server_missing_config' });
 
-  const requestedModel = req.body.model || 'deepseek/deepseek-r1:free';
-  const fallbacks = [requestedModel, 'gpt-4o-mini'].filter(Boolean);
+  const body = {
+    model: req.body.model || 'deepseek/deepseek-r1:free',
+    messages: req.body.messages || [],
+    max_tokens: req.body.max_tokens || 500,
+    temperature: typeof req.body.temperature === 'number' ? req.body.temperature : 0.7,
+    stream: false
+  };
 
-  const tryModel = async (model) => {
-    const body = {
-      model,
-      messages: req.body.messages || [],
-      max_tokens: req.body.max_tokens || 500,
-      temperature: typeof req.body.temperature === 'number' ? req.body.temperature : 0.7,
-      stream: false
-    };
+  try {
     const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+      method:'POST',
+      headers: { 'Authorization': `Bearer ${KEY}`, 'Content-Type':'application/json' },
       body: JSON.stringify(body)
     });
     const text = await r.text().catch(()=>null);
-    return { ok: r.ok, status: r.status, text };
-  };
-
-  let last = null;
-  for (const model of [...new Set(fallbacks)]) {
-    try {
-      const resp = await tryModel(model);
-      last = resp;
-      if (resp.ok) return res.status(resp.status).type('application/json').send(resp.text);
-      if (resp.status === 429 || resp.status >= 500) {
-        console.warn('Transient error for model', model, resp.status);
-        continue;
-      }
-      return res.status(resp.status).type('application/json').send(resp.text || JSON.stringify({ error: 'provider_error' }));
-    } catch (err) {
-      last = { ok:false, status:500, text: String(err) };
-      console.error('Fetch error for model', model, err);
-      continue;
-    }
+    return res.status(r.status).type('application/json').send(text);
+  } catch (err) {
+    console.error('proxy error', err);
+    return res.status(502).json({ error:'proxy_error', detail: String(err) });
   }
-
-  console.error('All models failed. Last:', last);
-  return res.status(502).json({ error: 'all_providers_failed', detail: last?.text || 'no response' });
 }
