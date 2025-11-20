@@ -34,17 +34,24 @@ export default async function handler(req, res) {
     return { ok: r.ok, status: r.status, text };
   };
 
+  let last = null;
   for (const model of [...new Set(fallbacks)]) {
     try {
       const resp = await tryModel(model);
+      last = resp;
       if (resp.ok) return res.status(resp.status).type('application/json').send(resp.text);
-      if (resp.status === 429 || resp.status >= 500) { console.warn('Transient error for model', model, resp.status); continue; }
+      if (resp.status === 429 || resp.status >= 500) {
+        console.warn('Transient error for model', model, resp.status);
+        continue;
+      }
       return res.status(resp.status).type('application/json').send(resp.text || JSON.stringify({ error: 'provider_error' }));
     } catch (err) {
+      last = { ok:false, status:500, text: String(err) };
       console.error('Fetch error for model', model, err);
       continue;
     }
   }
 
-  return res.status(502).json({ error: 'all_providers_failed', message: 'All upstream attempts failed.' });
+  console.error('All models failed. Last:', last);
+  return res.status(502).json({ error: 'all_providers_failed', detail: last?.text || 'no response' });
 }
