@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Decision Disco 🎪</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Decision Disco</h1>
+        <p class="subtitle">Can't decide? Let the disco ball choose for you ✨</p>
+
+        <input type="text" id="question" placeholder="What are you trying to decide?" />
+        <button id="start">Help Me Decide!</button>
+
+        <div id="questions" style="display:none;">
+            <p id="q1"></p>
+            <input type="text" id="a1" placeholder="type anything..." />
+            <button id="next1">Next →</button>
+
+            <p id="q2" style="display:none;"></p>
+            <input type="text" id="a2" placeholder="type anything..." style="display:none;" />
+            <button id="next2" style="display:none;">Show Me the Answer!</button>
+        </div>
+
+        <div id="result" style="display:none;"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
