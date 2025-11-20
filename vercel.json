@@ -4,10 +4,7 @@
     { "src": "package.json", "use": "@vercel/static-build" }
   ],
   "routes": [
-    // make sure API routes are checked first (so /api/* goes to serverless functions)
     { "src": "/api/(.*)", "dest": "/api/$1" },
-
-    // then serve the static site files
     { "src": "/", "dest": "/index.html" },
     { "src": "/(.*)", "dest": "/$1" }
   ],
