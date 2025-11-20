@@ -1,27 +1,10 @@
 {
   "name": "decision-disco",
   "version": "1.0.0",
-  "description": "",
-  "main": "script.js",
+  "description": "Decision Disco – static site with serverless API",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "mkdir -p build && cp index.html script.js style.css build/ || true"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Mustang9393/decision-disco.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Mustang9393/decision-disco/issues"
-  },
-  "homepage": "https://github.com/Mustang9393/decision-disco#readme",
-  "dependencies": {
-    "dotenv": "^17.2.3",
-    "express": "^5.1.0",
-    "node-fetch": "^3.3.2"
-  }
+  "dependencies": {}
 }
