@@ -1,7 +1,15 @@
 {
   "version": 2,
-  "outputDirectory": "public",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" },
+    { "src": "script.js", "use": "@vercel/static" },
+    { "src": "api/openrouter.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/style.css", "dest": "/style.css" },
+    { "src": "/script.js", "dest": "/script.js" },
+    { "src": "/api/openrouter", "dest": "/api/openrouter.js" },
+    { "src": "/", "dest": "/index.html" }
   ]
 }
