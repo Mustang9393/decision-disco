@@ -2,40 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Decision Disco — Your Personal Life Coach</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Decision Disco — AI Life Coach</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>Decision Disco</h1>
-    <p class="subtitle">Real advice. No coin flips. No bullshit.</p>
 
-    <div id="startScreen">
-      <select id="category">
-        <option value="" disabled selected>Choose your dilemma type...</option>
-        <option value="relationship">❤️ Relationship / Ex / Dating</option>
-        <option value="career">💼 Career / Job / Promotion</option>
-        <option value="financial">💰 Money / Buying / Investing</option>
-        <option value="life">🌙 Big Life Change (move, quit, etc)</option>
-        <option value="daily">☀️ Daily / Small Stuff</option>
-      </select>
+  <div class="background-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
 
-      <input type="text" id="question" placeholder="What exactly are you trying to decide?" />
-      <button id="startBtn">Get Real Advice →</button>
+  <div class="app-container">
+    <header class="fade-in">
+      <div class="logo-mark">✨</div>
+      <h1>Decision Disco</h1>
+      <p class="subtitle">Real advice. No coin flips.</p>
+    </header>
+
+    <div id="startScreen" class="card glass fade-in-up">
+      
+      <div class="input-group">
+        <label>The Vibe</label>
+        <div class="select-wrapper">
+          <span class="material-icons-round icon">tune</span>
+          <select id="category">
+            <option value="" disabled selected>Choose a dilemma type...</option>
+            <option value="lunch">🍔 Food & Lunch (Fun)</option>
+            <option value="entertainment">🎬 Movies & Plans (Fun)</option>
+            <option value="relationship">❤️ Love & Dating</option>
+            <option value="career">💼 Career & Ambition</option>
+            <option value="financial">💰 Money & Buying</option>
+            <option value="life">🌱 Big Life Changes</option>
+          </select>
+          <span class="material-icons-round arrow">expand_more</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>The Question</label>
+        <div class="text-wrapper">
+          <span class="material-icons-round icon">psychology</span>
+          <input type="text" id="question" placeholder="e.g. Thai vs Pizza? Quit my job?" autocomplete="off"/>
+        </div>
+      </div>
+
+      <button id="startBtn" class="btn-primary ripple">
+        <span>Get Clarity</span>
+        <span class="material-icons-round">arrow_forward</span>
+      </button>
     </div>
 
-    <div id="quiz" style="display:none;"></div>
+    <div id="quiz" class="card glass hidden">
+      </div>
 
-    <div id="resultScreen" style="display:none;">
-      <h2>Here's the truth you needed to hear:</h2>
-      <div id="finalAdvice" class="advice-box"></div>
+    <div id="resultScreen" class="hidden">
+      <div id="finalAdvice" class="advice-card glass fade-in"></div>
       <div id="prosCons"></div>
-      <button id="newBtn">Ask Another Question</button>
+      
+      <button id="newBtn" class="btn-secondary">
+        <span class="material-icons-round">replay</span>
+        Ask Another Question
+      </button>
     </div>
   </div>
 
   <script src="script.js"></script>
-  <script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>
