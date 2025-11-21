@@ -1,14 +1,7 @@
-// script.js — Decision Disco (Multi-Model Fallback Edition)
+// script.js — Decision Disco (Gemini Edition)
 
 (function () {
   console.log("Decision Disco loaded");
-
-  // --- FREE MODEL LIST (The Waterfall) ---
-  const FREE_MODELS = [
-    "deepseek/deepseek-r1:free",          // 1. Best reasoning (often busy)
-    "google/gemini-2.0-flash-exp:free",   // 2. Reliable & Fast backup
-    "meta-llama/llama-3.2-11b-vision-instruct:free" // 3. Solid backup
-  ];
 
   document.addEventListener("DOMContentLoaded", () => {
     
@@ -62,8 +55,6 @@
     startBtn?.addEventListener("click", onStartClick);
     newBtn?.addEventListener("click", () => location.reload());
 
-    // --- LOGIC ---
-
     function onStartClick() {
       category = document.getElementById("category")?.value;
       userQuestion = document.getElementById("question")?.value.trim();
@@ -91,8 +82,6 @@
       
       setTimeout(() => document.getElementById("ans")?.focus(), 100);
       document.getElementById("nextBtn")?.addEventListener("click", () => next(i));
-      
-      // Allow Enter key to submit
       document.getElementById("ans")?.addEventListener("keypress", (e) => {
         if(e.key === 'Enter') next(i);
       });
@@ -113,16 +102,14 @@
       prosConsEl.innerHTML = "";
 
       try {
-        const result = await getOpenRouterAdvice();
+        const result = await getGeminiAdvice();
         finalAdvice.innerHTML = result.text;
         prosConsEl.innerHTML = result.prosCons;
       } catch (e) {
         console.error("Final Error:", e);
-        finalAdvice.innerHTML = `<div class="score">Error</div><div class="advice-text">The AI spirits are overwhelmed right now. Please wait 30 seconds and try again.<br><br><small>Error: ${escapeHtml(e.message)}</small></div>`;
+        finalAdvice.innerHTML = `<div class="score">Error</div><div class="advice-text">Connection error. Please try again.<br><small>${escapeHtml(e.message)}</small></div>`;
       }
     }
-
-    // --- AI LOGIC (ROBUST) ---
 
     function buildPrompt() {
       return `Role: Brutally honest but kind life coach.
@@ -133,7 +120,7 @@ User Answers:
 3. ${answers[2]}
 4. ${answers[3]}
 
-Task: Analyze and output valid JSON only. No markdown formatting. No conversational filler.
+Task: Output valid JSON only. Do not use Markdown formatting (no \`\`\`json).
 Required JSON Structure:
 {
   "score": "Strong Yes — 9/10",
@@ -143,65 +130,39 @@ Required JSON Structure:
 }`;
     }
 
-    async function getOpenRouterAdvice() {
+    async function getGeminiAdvice() {
       const prompt = buildPrompt();
       
-      // Loop through our list of free models
-      for (const model of FREE_MODELS) {
-        console.log(`Trying model: ${model}...`);
-        
-        try {
-          const res = await fetch("/api/openrouter", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              model: model,
-              messages: [{ role: "user", content: prompt }],
-              max_tokens: 600
-            })
-          });
+      const res = await fetch("/api/openrouter", { // We kept the filename same to avoid 404s
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
 
-          // If rate limited (429) or server error (5xx), throw to trigger next model
-          if (res.status === 429 || res.status >= 500) {
-            throw new Error(`Model ${model} busy (Status ${res.status})`);
-          }
-
-          const data = await res.json();
-          
-          // Check for provider-specific errors in the body
-          if (data.error) {
-            throw new Error(`Provider Error: ${data.error.message}`);
-          }
-
-          const rawContent = data.choices?.[0]?.message?.content;
-          if (!rawContent) throw new Error("Empty response from AI");
-
-          // Cleanup JSON (Some models add ```json ... ``` wrappers)
-          const jsonStr = extractFirstJsonObject(rawContent);
-          if (!jsonStr) throw new Error("Could not find valid JSON in response");
-
-          const js = JSON.parse(jsonStr);
-
-          // If we got here, SUCCESS! Return formatted HTML.
-          return {
-            text: `<div class="score">${escapeHtml(js.score)}</div><div class="advice-text">${escapeHtml(js.advice)}</div>`,
-            prosCons: `<div class="pros-cons"><div class="column pro"><h3>Pros</h3><ul>${js.pros.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul></div><div class="column con"><h3>Cons/Risks</h3><ul>${js.cons.map(c=>`<li>${escapeHtml(c)}</li>`).join("")}</ul></div></div>`
-          };
-
-        } catch (err) {
-          console.warn(`Attempt failed on ${model}:`, err);
-          // Loop continues to next model...
-        }
+      const data = await res.json();
+      
+      if (data.error) {
+        throw new Error(data.error.message || JSON.stringify(data.error));
       }
 
-      // If loop finishes without returning, all models failed.
-      throw new Error("All free AI models are currently busy. Try again in 1 minute.");
+      const rawContent = data.choices?.[0]?.message?.content;
+      if (!rawContent) throw new Error("Empty response from AI");
+
+      // Extract JSON (Gemini sometimes adds extra text)
+      const jsonStr = extractFirstJsonObject(rawContent);
+      if (!jsonStr) throw new Error("Could not find valid JSON in response");
+
+      const js = JSON.parse(jsonStr);
+
+      return {
+        text: `<div class="score">${escapeHtml(js.score)}</div><div class="advice-text">${escapeHtml(js.advice)}</div>`,
+        prosCons: `<div class="pros-cons"><div class="column pro"><h3>Pros</h3><ul>${js.pros.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul></div><div class="column con"><h3>Cons/Risks</h3><ul>${js.cons.map(c=>`<li>${escapeHtml(c)}</li>`).join("")}</ul></div></div>`
+      };
     }
 
-    // --- HELPERS ---
-
     function extractFirstJsonObject(text) {
-      // Find the first '{' and the last '}'
       const first = text.indexOf('{');
       const last = text.lastIndexOf('}');
       if (first === -1 || last === -1) return null;
