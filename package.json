@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "echo 'No build step necessary'"
+    "build": "mkdir -p dist && cp -r public/* dist"
   },
   "engines": {
     "node": "22.x"
