@@ -5,6 +5,6 @@
     "build": "echo 'No build step necessary'"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   }
 }
