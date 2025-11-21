@@ -1,12 +1,18 @@
-// script.js — Decision Disco (full, robust, DOM-ready)
-// Replace your current script.js with this file.
+// script.js — Decision Disco (Multi-Model Fallback Edition)
 
 (function () {
-  console.log("script.js loaded");
+  console.log("Decision Disco loaded");
+
+  // --- FREE MODEL LIST (The Waterfall) ---
+  const FREE_MODELS = [
+    "deepseek/deepseek-r1:free",          // 1. Best reasoning (often busy)
+    "google/gemini-2.0-flash-exp:free",   // 2. Reliable & Fast backup
+    "meta-llama/llama-3.2-11b-vision-instruct:free" // 3. Solid backup
+  ];
 
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOMContentLoaded");
-
+    
+    // --- QUESTIONS DATA ---
     const questions = {
       relationship: [
         "How long have you been feeling this way about them?",
@@ -40,10 +46,10 @@
       ]
     };
 
-    // State
+    // --- STATE ---
     let answers = [], category = "", userQuestion = "";
 
-    // DOM elements
+    // --- ELEMENTS ---
     const startBtn = document.getElementById("startBtn");
     const newBtn = document.getElementById("newBtn");
     const startScreen = document.getElementById("startScreen");
@@ -52,26 +58,21 @@
     const finalAdvice = document.getElementById("finalAdvice");
     const prosConsEl = document.getElementById("prosCons");
 
-    // Sanity checks
-    if (!startBtn) console.warn("startBtn not found. Ensure your button id is 'startBtn'");
-    if (!quizEl) console.warn("quiz element not found (id='quiz')");
-    if (!finalAdvice) console.warn("finalAdvice element not found (id='finalAdvice')");
-    if (!resultScreen) console.warn("resultScreen element not found (id='resultScreen')");
-    if (!startScreen) console.warn("startScreen element not found (id='startScreen')");
-
-    // Attach listeners
+    // --- EVENT LISTENERS ---
     startBtn?.addEventListener("click", onStartClick);
     newBtn?.addEventListener("click", () => location.reload());
 
-    // If the CTA appears to not respond, this helps debug from console:
-    // paste: document.getElementById('startBtn').click()
+    // --- LOGIC ---
+
     function onStartClick() {
       category = document.getElementById("category")?.value;
       userQuestion = document.getElementById("question")?.value.trim();
+      
       if (!category || !userQuestion) {
-        alert("Fill everything!");
+        alert("Please select a category and type your question!");
         return;
       }
+      
       startScreen.style.display = "none";
       quizEl.style.display = "block";
       answers = [];
@@ -80,29 +81,27 @@
 
     function showQuestion(i) {
       if (i >= 4) return showResult();
-      if (!questions[category] || !questions[category][i]) {
-        alert("Invalid category or question index. Reloading.");
-        return location.reload();
-      }
-
+      
       quizEl.innerHTML = `
         <h3>Question ${i+1}/4</h3>
         <p class="question-text">${escapeHtml(questions[category][i])}</p>
         <input type="text" id="ans" class="neon-input" placeholder="Be honest..."><br>
         <button class="neon-btn" id="nextBtn">Next →</button>
       `;
+      
       setTimeout(() => document.getElementById("ans")?.focus(), 100);
       document.getElementById("nextBtn")?.addEventListener("click", () => next(i));
+      
+      // Allow Enter key to submit
+      document.getElementById("ans")?.addEventListener("keypress", (e) => {
+        if(e.key === 'Enter') next(i);
+      });
     }
 
     function next(i) {
       const el = document.getElementById("ans");
-      if (!el) {
-        alert("Input not found. Reloading.");
-        return location.reload();
-      }
       const ans = el.value.trim();
-      if (!ans) return alert("Type something!");
+      if (!ans) return alert("Please type something!");
       answers.push(ans);
       showQuestion(i + 1);
     }
@@ -110,7 +109,7 @@
     async function showResult() {
       quizEl.style.display = "none";
       resultScreen.style.display = "block";
-      finalAdvice.innerHTML = `<div class="loader"></div><p>Thinking…</p>`;
+      finalAdvice.innerHTML = `<div class="loader"></div><p style="text-align:center">Consulting the oracle...</p>`;
       prosConsEl.innerHTML = "";
 
       try {
@@ -118,222 +117,101 @@
         finalAdvice.innerHTML = result.text;
         prosConsEl.innerHTML = result.prosCons;
       } catch (e) {
-        console.error("showResult error:", e);
-        // If it's a parse error with raw assistant output, show it to help debug
-        const safeMsg = escapeHtml(String(e.message || e));
-        finalAdvice.innerHTML = `<div class="score">Error</div><div class="advice-text">${safeMsg}</div>`;
-        prosConsEl.innerHTML = "";
+        console.error("Final Error:", e);
+        finalAdvice.innerHTML = `<div class="score">Error</div><div class="advice-text">The AI spirits are overwhelmed right now. Please wait 30 seconds and try again.<br><br><small>Error: ${escapeHtml(e.message)}</small></div>`;
       }
     }
+
+    // --- AI LOGIC (ROBUST) ---
 
     function buildPrompt() {
-      return `You are Grok, a brutally honest but kind life coach. User's dilemma: "${userQuestion}" (${category}).
+      return `Role: Brutally honest but kind life coach.
+User Dilemma: "${userQuestion}" (Category: ${category})
+User Answers:
+1. ${answers[0]}
+2. ${answers[1]}
+3. ${answers[2]}
+4. ${answers[3]}
 
-Raw answers:
-1. ${answers[0] || ""}
-2. ${answers[1] || ""}
-3. ${answers[2] || ""}
-4. ${answers[3] || ""}
-
-Analyze deeply (emotions, nuances). Respond in strict JSON only:
+Task: Analyze and output valid JSON only. No markdown formatting. No conversational filler.
+Required JSON Structure:
 {
   "score": "Strong Yes — 9/10",
-  "advice": "1-3 empathetic sentences.",
-  "pros": ["bullet1", "bullet2"],
-  "cons": ["bullet1", "bullet2"]
-}
-
-IMPORTANT: Output exactly one valid JSON object and nothing else. Use double quotes for keys and strings.`;
+  "advice": "2-3 insightful sentences.",
+  "pros": ["point 1", "point 2"],
+  "cons": ["risk 1", "risk 2"]
+}`;
     }
 
-    // Robust getOpenRouterAdvice with retries and clearer error handling
-async function getOpenRouterAdvice() {
-  const prompt = buildPrompt();
+    async function getOpenRouterAdvice() {
+      const prompt = buildPrompt();
+      
+      // Loop through our list of free models
+      for (const model of FREE_MODELS) {
+        console.log(`Trying model: ${model}...`);
+        
+        try {
+          const res = await fetch("/api/openrouter", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: model,
+              messages: [{ role: "user", content: prompt }],
+              max_tokens: 600
+            })
+          });
 
-  const payload = {
-    model: "deepseek/deepseek-r1:free",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 500,
-    temperature: 0.7
-  };
-
-  // retry policy
-  const maxAttempts = 3;
-  const baseDelayMs = 500;
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      // call proxy
-      const res = await fetch("/api/openrouter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      // non-2xx (proxy-level) status
-      if (!res.ok) {
-        const text = await res.text().catch(() => "<no-body>");
-        // For 5xx errors, we may want to retry
-        const isServerError = res.status >= 500 && res.status < 600;
-        if (isServerError && attempt < maxAttempts) {
-          console.warn(`Proxy HTTP ${res.status}, attempt ${attempt}/${maxAttempts}. Retrying...`);
-          await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, attempt - 1)));
-          continue;
-        }
-        throw new Error(`Proxy error ${res.status}: ${text}`);
-      }
-
-      // parse JSON from proxy
-      const data = await res.json().catch(() => null);
-      if (!data) throw new Error("Proxy returned invalid JSON.");
-
-      // If provider returned an internal error for the choice
-      const choice0 = (data.choices && data.choices[0]) ? data.choices[0] : null;
-      if (choice0 && choice0.error) {
-        // provider-side error (like the one you saw)
-        const provErr = choice0.error;
-        const provMsg = provErr.message || JSON.stringify(provErr);
-        const provCode = provErr.code || "unknown";
-        console.warn("Provider-side error in choice:", provErr);
-
-        // if it's a transient 5xx-ish error, retry
-        const transientCodes = [502, 503, 504];
-        if (transientCodes.includes(provErr.code) && attempt < maxAttempts) {
-          console.warn(`Transient provider error ${provCode}, attempt ${attempt}/${maxAttempts}. Retrying...`);
-          await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, attempt - 1)));
-          continue;
-        }
-
-        // not retriable (or we've exhausted attempts) — throw a helpful error containing provider info
-        throw new Error(`Provider error ${provCode}: ${provMsg}`);
-      }
-
-      // normally, assistant content is in data.choices[0].message.content
-      const raw = (choice0 && choice0.message && choice0.message.content) ? choice0.message.content.trim() : "";
-      if (!raw) {
-        // no assistant content at all — treat as transient server/provider issue
-        // retry a few times for transient empty responses
-        if (attempt < maxAttempts) {
-          console.warn(`Empty assistant content (attempt ${attempt}/${maxAttempts}). Retrying...`);
-          await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, attempt - 1)));
-          continue;
-        }
-        throw new Error("No assistant content. Response: " + JSON.stringify(data));
-      }
-
-      // Try to parse JSON response (robust extraction)
-      let js = null;
-      try {
-        js = JSON.parse(raw);
-      } catch (directErr) {
-        const extracted = extractFirstJsonObject(raw);
-        if (extracted) {
-          try { js = JSON.parse(extracted); }
-          catch (parseErr) {
-            console.warn("Failed to parse extracted JSON:", parseErr, "extracted:", extracted);
+          // If rate limited (429) or server error (5xx), throw to trigger next model
+          if (res.status === 429 || res.status >= 500) {
+            throw new Error(`Model ${model} busy (Status ${res.status})`);
           }
+
+          const data = await res.json();
+          
+          // Check for provider-specific errors in the body
+          if (data.error) {
+            throw new Error(`Provider Error: ${data.error.message}`);
+          }
+
+          const rawContent = data.choices?.[0]?.message?.content;
+          if (!rawContent) throw new Error("Empty response from AI");
+
+          // Cleanup JSON (Some models add ```json ... ``` wrappers)
+          const jsonStr = extractFirstJsonObject(rawContent);
+          if (!jsonStr) throw new Error("Could not find valid JSON in response");
+
+          const js = JSON.parse(jsonStr);
+
+          // If we got here, SUCCESS! Return formatted HTML.
+          return {
+            text: `<div class="score">${escapeHtml(js.score)}</div><div class="advice-text">${escapeHtml(js.advice)}</div>`,
+            prosCons: `<div class="pros-cons"><div class="column pro"><h3>Pros</h3><ul>${js.pros.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul></div><div class="column con"><h3>Cons/Risks</h3><ul>${js.cons.map(c=>`<li>${escapeHtml(c)}</li>`).join("")}</ul></div></div>`
+          };
+
+        } catch (err) {
+          console.warn(`Attempt failed on ${model}:`, err);
+          // Loop continues to next model...
         }
       }
 
-      if (!js) {
-        // Provide raw assistant output in the thrown error (escaped in UI)
-        throw new Error("Assistant didn't return JSON. Raw output: " + raw);
-      }
-
-      // Validate expected fields
-      if (!js.advice || !Array.isArray(js.pros) || !Array.isArray(js.cons) || !js.score) {
-        throw new Error("Assistant JSON missing expected keys. JSON: " + JSON.stringify(js));
-      }
-
-      // Success — return formatted HTML
-      return {
-        text: `<div class="score">${escapeHtml(js.score)}</div><div class="advice-text">${escapeHtml(js.advice)}</div><p class="disclaimer">Grok-powered advice • Not professional • Trust your gut</p>`,
-        prosCons: `<div class="pros-cons"><div class="column pro"><h3>Pros</h3><ul>${js.pros.map(p=>`<li>${escapeHtml(p)}</li>`).join("")}</ul></div><div class="column con"><h3>Cons/Risks</h3><ul>${js.cons.map(c=>`<li>${escapeHtml(c)}</li>`).join("")}</ul></div></div>`
-      };
-
-    } catch (err) {
-      // If last attempt, rethrow; otherwise, loop to retry if appropriate
-      console.error(`Attempt ${attempt} failed:`, err);
-      if (attempt >= maxAttempts) {
-        // Wrap provider/server info into a user-friendly message
-        // If the error message contains raw JSON or provider text, we include it in the console but keep UI friendly
-        const userMessage = `AI service temporarily unavailable. Try again in a few seconds. (${escapeHtml(String(err.message))})`;
-        throw new Error(userMessage);
-      }
-      // else wait and retry
-      await new Promise(r => setTimeout(r, baseDelayMs * Math.pow(2, attempt - 1)));
+      // If loop finishes without returning, all models failed.
+      throw new Error("All free AI models are currently busy. Try again in 1 minute.");
     }
-  } // for attempts
 
-  // if somehow falls through
-  throw new Error("Failed to get a response from the AI service.");
-}
+    // --- HELPERS ---
 
-    /**
-     * Extract the first balanced JSON object from text.
-     * Correctly ignores braces inside string literals and handles escapes.
-     * Returns the substring '{...}' or null if none found.
-     */
     function extractFirstJsonObject(text) {
-      const firstBrace = text.indexOf('{');
-      if (firstBrace === -1) return null;
-
-      let inString = false;     // false or the quote char that opened the string
-      let escape = false;
-      let depth = 0;
-      for (let i = firstBrace; i < text.length; i++) {
-        const ch = text[i];
-
-        if (escape) {
-          escape = false;
-          continue;
-        }
-
-        if (ch === '\\') {
-          escape = true;
-          continue;
-        }
-
-        if (ch === '"' || ch === "'") {
-          if (!inString) {
-            inString = ch;
-          } else if (inString === ch) {
-            inString = false;
-          }
-          continue;
-        }
-
-        if (!inString) {
-          if (ch === '{') depth++;
-          else if (ch === '}') {
-            depth--;
-            if (depth === 0) {
-              return text.slice(firstBrace, i + 1);
-            }
-          }
-        }
-      }
-      return null;
+      // Find the first '{' and the last '}'
+      const first = text.indexOf('{');
+      const last = text.lastIndexOf('}');
+      if (first === -1 || last === -1) return null;
+      return text.substring(first, last + 1);
     }
 
-    // Escape HTML to avoid XSS when inserting assistant responses
     function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      if (typeof s !== 'string') return s;
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    // debugging helper available from console:
-    // window.debugClickStart = () => document.getElementById('startBtn')?.click();
-    window.debugClickStart = () => {
-      const b = document.getElementById('startBtn');
-      if (b) { b.click(); return true; }
-      return false;
-    };
-
-    // end DOMContentLoaded
-  }); // document.addEventListener
-})(); // IIFE end
+  });
+})();
