@@ -130,7 +130,7 @@ Required JSON Structure:
 }`;
     }
 
-    async function getGeminiAdvice() {
+   async function getGeminiAdvice() {
       const prompt = buildPrompt();
       
       const res = await fetch("/api/openrouter", { 
@@ -141,15 +141,22 @@ Required JSON Structure:
         })
       });
 
-      const data = await res.json();
+      // 1. Get raw text first (so we can see HTML errors)
+      const rawText = await res.text();
+
+      // 2. Try to parse it as JSON
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch (err) {
+        // If it fails, it's likely an HTML error page from Vercel
+        console.error("Non-JSON response:", rawText);
+        throw new Error(`Server Error (Not JSON): ${rawText.substring(0, 100)}...`); 
+      }
       
-      // Improved Error Handling
+      // 3. Handle API errors
       if (data.error) {
-        // If it's a string error from our server, show the details
-        if (typeof data.error === 'string') {
-          throw new Error(data.details || data.error);
-        }
-        // If it's an object from Google, show the message
+        if (typeof data.error === 'string') throw new Error(data.details || data.error);
         throw new Error(data.error.message || JSON.stringify(data.error));
       }
 
