@@ -27,6 +27,10 @@ h1 {
   font-size: 3.5em;
   margin: 0 0 8px 0;
   background: linear-gradient(90deg, #ff69b4, #ff1493);
+  
+  /* THE FIX: Add the standard property first */
+  background-clip: text;
+  
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
