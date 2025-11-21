@@ -2,6 +2,9 @@
   "name": "decision-disco",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "build": "mkdir -p public && cp index.html style.css script.js public/"
+  },
   "engines": {
     "node": "22.x"
   }
