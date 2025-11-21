@@ -133,7 +133,7 @@ Required JSON Structure:
     async function getGeminiAdvice() {
       const prompt = buildPrompt();
       
-      const res = await fetch("/api/openrouter", { // We kept the filename same to avoid 404s
+      const res = await fetch("/api/openrouter", { 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -143,14 +143,19 @@ Required JSON Structure:
 
       const data = await res.json();
       
+      // Improved Error Handling
       if (data.error) {
+        // If it's a string error from our server, show the details
+        if (typeof data.error === 'string') {
+          throw new Error(data.details || data.error);
+        }
+        // If it's an object from Google, show the message
         throw new Error(data.error.message || JSON.stringify(data.error));
       }
 
       const rawContent = data.choices?.[0]?.message?.content;
       if (!rawContent) throw new Error("Empty response from AI");
 
-      // Extract JSON (Gemini sometimes adds extra text)
       const jsonStr = extractFirstJsonObject(rawContent);
       if (!jsonStr) throw new Error("Could not find valid JSON in response");
 
