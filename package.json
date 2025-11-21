@@ -1,6 +1,9 @@
 {
   "name": "decision-disco",
   "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p dist && cp index.html style.css script.js dist/"
+  },
   "engines": {
     "node": "22.x"
   }
