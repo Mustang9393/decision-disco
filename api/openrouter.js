@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     // 2. Prepare the request to Google Gemini
-    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GOOGLE_KEY}`;
+    const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_KEY}`;
     
     // Transform incoming OpenAI-style format to Gemini format
     const incomingMessages = req.body.messages || [];
