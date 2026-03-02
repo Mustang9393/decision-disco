@@ -211,3 +211,15 @@ select:focus, input:focus {
   margin-bottom: 15px;
 }
 @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+/* Add this to the bottom of your existing style.css */
+
+.loading-pulse {
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; transform: scale(0.98); }
+  50% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.4; transform: scale(0.98); }
+}
