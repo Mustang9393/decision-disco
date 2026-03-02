@@ -1,5 +1,13 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "rewrites": [{ "source": "/api/openrouter", "destination": "/api/openrouter.js" }]
+  "builds": [
+    { "src": "api/openrouter.js", "use": "@vercel/node" },
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "style.css", "use": "@vercel/static" },
+    { "src": "script.js", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/openrouter", "dest": "api/openrouter.js" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
 }
