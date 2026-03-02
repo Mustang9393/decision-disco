@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "rewrites": [
-    { "source": "/api/openrouter", "destination": "/api/openrouter.js" }
-  ]
+  "cleanUrls": true,
+  "rewrites": [{ "source": "/api/openrouter", "destination": "/api/openrouter.js" }]
 }
